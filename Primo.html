@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mario - Verificador de Primos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente 8-bit de Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Estilos Retro 8-bit y configuración general */
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #5C94FC; /* Azul Cielo Nivel 1-1 */
+            overflow: hidden; 
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* --- SISTEMA DE PARALLAX --- */
+        .parallax-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; /* Detrás de la tarjeta principal */
+            pointer-events: none; /* Para no interferir con los clics */
+        }
+
+        .parallax-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 200vw; /* Doble ancho para el loop infinito */
+            height: 100%;
+            display: flex;
+        }
+
+        .parallax-group {
+            width: 100vw; /* El ancho de una pantalla */
+            height: 100%;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        /* Animaciones base del scroll horizontal */
+        @keyframes scrollLayer {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100vw); }
+        }
+
+        .layer-clouds { animation: scrollLayer 45s linear infinite; }
+        .layer-hills { animation: scrollLayer 25s linear infinite; }
+        .layer-foreground { animation: scrollLayer 12s linear infinite; }
+
+        /* --- ELEMENTOS DEL ESCENARIO --- */
+        /* Nubes (CSS puro) */
+        .cloud {
+            position: absolute; background-color: white; opacity: 0.95;
+            box-shadow: 30px -30px 0 0 white, 60px 0 0 0 white, 30px 30px 0 0 white, 0px 30px 0 0 white, -30px 0 0 0 white;
+        }
+        .cloud.small { width: 90px; height: 30px; transform: scale(0.6); top: 15%; left: 20%; }
+        .cloud.medium { width: 90px; height: 30px; transform: scale(0.8); top: 25%; left: 60%; }
+        .cloud.large { width: 90px; height: 30px; top: 10%; left: 85%; }
+
+        /* Colinas con ojos */
+        .hill {
+            position: absolute; bottom: 64px;
+            background: #00A800; border: 4px solid #000;
+            border-bottom: none; border-radius: 50% 50% 0 0;
+            box-shadow: inset 8px 8px 0 rgba(255,255,255,0.2);
+        }
+        .hill.big { width: 180px; height: 90px; left: 10%; }
+        .hill.small { width: 120px; height: 60px; left: 55%; }
+        
+        .eyes {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px;
+        }
+        .hill.small .eyes { top: 15px; transform: translateX(-50%) scale(0.8); }
+        
+        .eye {
+            width: 8px; height: 16px; background: #fff;
+            border: 2px solid #000; border-radius: 4px; position: relative;
+        }
+        .eye::after {
+            content: ''; position: absolute; top: 2px; right: 0;
+            width: 2px; height: 6px; background: #000;
+        }
+
+        /* Arbustos (similares a las nubes pero verdes y en el suelo) */
+        .bush {
+            position: absolute; bottom: 64px; background-color: #00A800;
+            border: 3px solid #000; border-bottom: none; border-radius: 20px 20px 0 0;
+        }
+        .bush.b1 { width: 60px; height: 30px; left: 35%; }
+        .bush.b1::before { content: ''; position: absolute; bottom: 0; left: -25px; width: 40px; height: 20px; background: #00A800; border: 3px solid #000; border-bottom: none; border-right: none; border-radius: 20px 20px 0 0;}
+        .bush.b1::after { content: ''; position: absolute; bottom: 0; right: -25px; width: 40px; height: 20px; background: #00A800; border: 3px solid #000; border-bottom: none; border-left: none; border-radius: 20px 20px 0 0;}
+        
+        .bush.b2 { width: 60px; height: 30px; left: 80%; transform: scale(0.8); transform-origin: bottom; }
+
+        /* Tuberías */
+        .pipe {
+            position: absolute; bottom: 64px; width: 64px;
+            background: linear-gradient(to right, #00A800 0%, #00F800 20%, #00A800 80%, #005800 100%);
+            border: 4px solid #000; border-bottom: none;
+            display: flex; justify-content: center;
+        }
+        .pipe.p1 { height: 100px; left: 30%; }
+        .pipe.p2 { height: 150px; left: 75%; }
+        .pipe-top {
+            position: absolute; top: -20px; width: 76px; height: 24px;
+            background: linear-gradient(to right, #00A800 0%, #00F800 20%, #00A800 80%, #005800 100%);
+            border: 4px solid #000;
+        }
+
+        /* Bloques Flotantes */
+        .platforms { position: absolute; bottom: 200px; left: 45%; display: flex; }
+        .platform-alt { position: absolute; bottom: 280px; left: 80%; display: flex; }
+        
+        .brick-block {
+            width: 32px; height: 32px; background: #c84c0c; border: 4px solid #000;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5), inset 2px 2px 0 rgba(255,180,180,0.5);
+            position: relative;
+        }
+        /* Líneas de los ladrillos */
+        .brick-block::before { content: ''; position: absolute; top: 12px; left: 0; width: 100%; height: 2px; background: #000; }
+        .brick-block::after { content: ''; position: absolute; top: 0; left: 12px; width: 2px; height: 12px; background: #000; box-shadow: 12px 14px 0 #000; }
+
+        .q-block {
+            width: 32px; height: 32px; background: #FBD000; border: 4px solid #000;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 16px; color: #c84c0c; font-weight: bold;
+            animation: qBlink 0.6s step-end infinite;
+        }
+        @keyframes qBlink { 0%, 100% { background: #FBD000; color: #c84c0c; } 50% { background: #f7a000; color: #a03000; } }
+
+        /* Moneda Giratoria del Escenario */
+        .bg-coin {
+            position: absolute; top: -36px; left: 50%; transform: translateX(-50%);
+            width: 16px; height: 24px; background: #FBD000;
+            border: 3px solid #000; border-radius: 50%;
+            animation: coinSpin 1.2s linear infinite;
+            box-shadow: inset -3px 0 0 rgba(255,255,255,0.7);
+        }
+        @keyframes coinSpin { 0% { transform: translateX(-50%) scaleX(1); } 50% { transform: translateX(-50%) scaleX(0.1); } 100% { transform: translateX(-50%) scaleX(1); } }
+
+        /* Suelo de Ladrillos */
+        .ground-strip {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 64px;
+            background-color: #c84c0c;
+            background-image: linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
+            background-size: 32px 32px; background-position: 0 0, 16px 16px;
+            border-top: 6px solid #000;
+        }
+
+        /* --- INTERFAZ PRINCIPAL --- */
+        .ui-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+
+        .nes-container {
+            background-color: #fff; border: 6px solid #000;
+            box-shadow: 12px 12px 0px rgba(0,0,0,0.25);
+            transition: all 0.3s ease;
+        }
+
+        .nes-input {
+            border: 4px solid #000; outline: none; padding: 16px; width: 100%;
+            font-family: inherit; font-size: 16px; transition: background-color 0.2s;
+        }
+        .nes-input:focus { background-color: #FEF08A; }
+
+        .nes-btn {
+            background-color: #E52521; color: #fff; border: 4px solid #000;
+            box-shadow: inset -4px -6px 0px rgba(0,0,0,0.3); font-family: inherit;
+            cursor: pointer; text-transform: uppercase; font-size: 14px;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .nes-btn:active { box-shadow: inset 4px 4px 0px rgba(0,0,0,0.3); transform: scale(0.96); }
+
+        .block-bump { animation: bump 0.3s ease-out; }
+        @keyframes bump { 0% { transform: translateY(0); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0); } }
+
+        /* Efectos Visuales de Resultados */
+        .mario-coin {
+            position: absolute; width: 24px; height: 36px; background-color: #FBD000;
+            border: 4px solid #000; border-radius: 50%; z-index: 50; pointer-events: none;
+            box-shadow: inset -4px 0 0 rgba(255,255,255,0.6), inset 4px 0 0 #c84c0c;
+        }
+        @keyframes coinJump { 0% { transform: translate(var(--tx), 0) scale(1); opacity: 1; } 40% { transform: translate(var(--tx), -140px) scale(1.2); opacity: 1; } 100% { transform: translate(var(--tx), 60px) scale(1); opacity: 0; } }
+
+        /* Ventana pequeña de Game Over al estilo NES */
+        .game-over-window {
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            background-color: #000; 
+            color: #E52521;
+            border: 6px solid #fff;
+            padding: 2.5rem 3rem;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 2rem; 
+            text-align: center; 
+            z-index: 100; 
+            box-shadow: 12px 12px 0 rgba(0,0,0,0.6);
+            text-shadow: 3px 3px 0 #fff;
+            animation: gameOverWindowAnim 0.5s forwards;
+        }
+        @keyframes gameOverWindowAnim { 
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 
+            60% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
+        }
+
+        .game-over-close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            text-shadow: none;
+            transition: color 0.2s;
+        }
+        .game-over-close:hover {
+            color: #FBD000;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- --- FONDO PARALLAX --- -->
+    <div class="parallax-container">
+        
+        <!-- Capa 1: Nubes (Desplazamiento muy lento) -->
+        <div class="parallax-layer layer-clouds">
+            <div class="parallax-group">
+                <div class="cloud small"></div>
+                <div class="cloud medium"></div>
+                <div class="cloud large"></div>
+            </div>
+            <!-- Duplicado para loop infinito -->
+            <div class="parallax-group">
+                <div class="cloud small"></div>
+                <div class="cloud medium"></div>
+                <div class="cloud large"></div>
+            </div>
+        </div>
+
+        <!-- Capa 2: Colinas y Arbustos (Desplazamiento medio) -->
+        <div class="parallax-layer layer-hills">
+            <div class="parallax-group">
+                <div class="hill big">
+                    <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+                </div>
+                <div class="hill small">
+                    <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+                </div>
+                <div class="bush b1"></div>
+            </div>
+            <!-- Duplicado -->
+            <div class="parallax-group">
+                <div class="hill big">
+                    <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+                </div>
+                <div class="hill small">
+                    <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+                </div>
+                <div class="bush b1"></div>
+            </div>
+        </div>
+
+        <!-- Capa 3: Primer Plano - Tuberías, Bloques y Suelo (Desplazamiento rápido) -->
+        <div class="parallax-layer layer-foreground">
+            <div class="parallax-group">
+                <!-- Tuberías -->
+                <div class="pipe p1"><div class="pipe-top"></div></div>
+                <div class="pipe p2"><div class="pipe-top"></div></div>
+                
+                <!-- Arbustos frontales -->
+                <div class="bush b2"></div>
+                
+                <!-- Plataformas Flotantes 1 -->
+                <div class="platforms">
+                    <div class="brick-block"></div>
+                    <div class="q-block">?
+                        <div class="bg-coin"></div> <!-- Moneda giratoria adorno -->
+                    </div>
+                    <div class="brick-block"></div>
+                </div>
+                
+                <!-- Plataformas Flotantes 2 -->
+                <div class="platform-alt">
+                    <div class="q-block">?</div>
+                </div>
+
+                <!-- Suelo (Adjunto a la capa frontal para que se mueva con todo) -->
+                <div class="ground-strip"></div>
+            </div>
+            
+            <!-- Duplicado -->
+            <div class="parallax-group">
+                <div class="pipe p1"><div class="pipe-top"></div></div>
+                <div class="pipe p2"><div class="pipe-top"></div></div>
+                <div class="bush b2"></div>
+                <div class="platforms">
+                    <div class="brick-block"></div>
+                    <div class="q-block">?<div class="bg-coin"></div></div>
+                    <div class="brick-block"></div>
+                </div>
+                <div class="platform-alt">
+                    <div class="q-block">?</div>
+                </div>
+                <div class="ground-strip"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- --- UI PRINCIPAL --- -->
+    <div class="ui-wrapper">
+        <main id="mainCard" class="nes-container w-full max-w-md p-6 sm:p-8">
+            <!-- Encabezado -->
+            <div class="text-center mb-8">
+                <div id="iconDisplay" class="text-6xl mb-6 drop-shadow-md">❓</div>
+                <h1 class="text-xl sm:text-2xl leading-relaxed text-black">BLOQUE<br>PRIMO</h1>
+            </div>
+
+            <!-- Formulario -->
+            <div class="space-y-6">
+                <div>
+                    <label for="numberInput" class="block text-xs mb-3 text-slate-700">NÚMERO A REVISAR:</label>
+                    <input type="number" id="numberInput" class="nes-input" placeholder="EJ. 17" min="0">
+                </div>
+
+                <button id="checkBtn" class="nes-btn w-full py-4 px-4 hover:bg-red-600">¡GOLPEAR!</button>
+
+                <!-- Contenedor del Resultado -->
+                <div id="resultContainer" class="hidden border-4 border-black p-5 text-center mt-6">
+                    <h2 id="resultTitle" class="text-sm sm:text-base mb-4 leading-loose"></h2>
+                    <p id="resultDescription" class="text-xs leading-loose"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Lógica matemática
+        function checkPrime(num) {
+            if (num <= 1) return { isPrime: false, message: "LOS NÚMEROS MENORES O IGUALES A 1 NO SON PRIMOS." };
+            if (num === 2) return { isPrime: true, message: "¡ES EL ÚNICO NÚMERO PRIMO PAR!" };
+            if (num % 2 === 0) return { isPrime: false, message: "NO ES PRIMO, ES DIVISIBLE POR 2." };
+            
+            for (let i = 3; i <= Math.sqrt(num); i += 2) {
+                if (num % i === 0) {
+                    return { isPrime: false, message: `NO ES PRIMO, ES DIVISIBLE POR ${i}.` };
+                }
+            }
+            return { isPrime: true, message: "SOLO ES DIVISIBLE POR 1 Y POR SÍ MISMO." };
+        }
+
+        const numberInput = document.getElementById('numberInput');
+        const checkBtn = document.getElementById('checkBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultDescription = document.getElementById('resultDescription');
+        const mainCard = document.getElementById('mainCard');
+        const iconDisplay = document.getElementById('iconDisplay');
+
+        // --- FUNCIONES DE EFECTOS VISUALES AL VALIDAR ---
+        function spawnCoins() {
+            const numCoins = 5;
+            const cardRect = mainCard.getBoundingClientRect();
+            
+            for(let i = 0; i < numCoins; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'mario-coin';
+                    coin.style.left = (cardRect.left + cardRect.width / 2 - 12) + 'px';
+                    coin.style.top = cardRect.top + 'px';
+                    const randomX = (Math.random() - 0.5) * 150;
+                    coin.style.setProperty('--tx', `${randomX}px`);
+                    coin.style.animation = `coinJump 0.8s ease-out forwards`;
+                    
+                    document.body.appendChild(coin);
+                    setTimeout(() => coin.remove(), 800);
+                }, i * 150); 
+            }
+        }
+
+        function showGameOverScreen() {
+            const popup = document.createElement('div');
+            popup.className = 'game-over-window';
+            
+            // Crear el botón de cerrar (X)
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'game-over-close';
+            closeBtn.innerHTML = 'X';
+            closeBtn.onclick = () => popup.remove();
+
+            // Crear el texto
+            const text = document.createElement('div');
+            text.innerHTML = 'GAME<br>OVER';
+
+            // Agregar elementos a la ventana
+            popup.appendChild(closeBtn);
+            popup.appendChild(text);
+            
+            document.body.appendChild(popup);
+        }
+
+        function processNumber() {
+            mainCard.classList.remove('block-bump');
+            void mainCard.offsetWidth;
+            mainCard.classList.add('block-bump');
+
+            const inputValue = numberInput.value.trim();
+            if (inputValue === '') return showResult('¡ERROR!', 'INGRESA UN NÚMERO VÁLIDO.', 'error');
+            
+            const num = Number(inputValue);
+            if (!Number.isInteger(num)) return showResult('¡INVÁLIDO!', 'INGRESA UN NÚMERO ENTERO.', 'error');
+
+            const result = checkPrime(num);
+
+            setTimeout(() => {
+                if (result.isPrime) {
+                    showResult(`¡1UP! ${num} ES PRIMO`, result.message, 'success');
+                    spawnCoins();
+                } else {
+                    showResult(`GAME OVER: ${num} NO ES PRIMO`, result.message, 'failure');
+                    showGameOverScreen();
+                }
+            }, 150);
+        }
+
+        function showResult(title, description, type) {
+            resultTitle.textContent = title;
+            resultDescription.textContent = description;
+            resultContainer.classList.remove('hidden');
+            resultContainer.className = 'border-4 border-black p-5 text-center mt-6 block';
+            
+            if (type === 'success') {
+                resultContainer.classList.add('bg-[#049CD8]', 'text-white');
+                iconDisplay.textContent = '⭐';
+                mainCard.style.borderColor = '#049CD8';
+            } else if (type === 'failure') {
+                resultContainer.classList.add('bg-[#E52521]', 'text-white');
+                iconDisplay.textContent = '🐢';
+                mainCard.style.borderColor = '#E52521';
+            } else {
+                resultContainer.classList.add('bg-[#FBD000]', 'text-black');
+                iconDisplay.textContent = '❓';
+                mainCard.style.borderColor = '#000';
+            }
+        }
+
+        checkBtn.addEventListener('click', processNumber);
+        numberInput.addEventListener('keypress', e => { if (e.key === 'Enter') processNumber(); });
+        window.onload = () => numberInput.focus();
+    </script>
+</body>
+</html>
